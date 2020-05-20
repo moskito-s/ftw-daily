@@ -13,10 +13,10 @@ import routeConfiguration from '../../routeConfiguration';
  * @param {Object} paramValue Search parameter value
  * @param {Object} filters Filters configuration
  */
-export const validURLParamForExtendedData = (paramName, paramValueRaw, filters) => {
-  const filtersArray = Object.values(filters);
+export const validURLParamForExtendedData = (paramName, paramValueRaw, filterConfigs) => {
+  // TODO const filtersArray = Object.values(filters);
   // resolve configuration for this filter
-  const filterConfig = filtersArray.find(f => f.paramName === paramName);
+  const filterConfig = filterConfigs.find(f => f.paramName === paramName);
 
   const paramValue = paramValueRaw.toString();
   const valueArray = paramValue ? paramValue.split(',') : [];
@@ -24,9 +24,9 @@ export const validURLParamForExtendedData = (paramName, paramValueRaw, filters) 
   if (filterConfig && valueArray.length > 0) {
     const { min, max, active } = filterConfig.config || {};
 
-    if (filterConfig.options) {
+    if (filterConfig.config.options) {
       // Single and multiselect filters
-      const allowedValues = filterConfig.options.map(o => o.key);
+      const allowedValues = filterConfig.config.options.map(o => o.key);
 
       const validValues = intersection(valueArray, allowedValues).join(',');
       return validValues.length > 0 ? { [paramName]: validValues } : {};
@@ -52,8 +52,8 @@ export const validURLParamForExtendedData = (paramName, paramValueRaw, filters) 
  * @param {Object} params Search params
  * @param {Object} filters Filters configuration
  */
-export const validFilterParams = (params, filters) => {
-  const filterParamNames = Object.values(filters).map(f => f.paramName);
+export const validFilterParams = (params, filterConfig) => {
+  const filterParamNames = filterConfig.map(f => f.paramName);// TODO Object.values(filters).map(f => f.paramName);
   const paramEntries = Object.entries(params);
 
   return paramEntries.reduce((validParams, entry) => {
@@ -63,7 +63,7 @@ export const validFilterParams = (params, filters) => {
     return filterParamNames.includes(paramName)
       ? {
           ...validParams,
-          ...validURLParamForExtendedData(paramName, paramValue, filters),
+          ...validURLParamForExtendedData(paramName, paramValue, filterConfig),
         }
       : { ...validParams };
   }, {});
@@ -77,8 +77,8 @@ export const validFilterParams = (params, filters) => {
  * @param {Object} params Search params
  * @param {Object} filters Filters configuration
  */
-export const validURLParamsForExtendedData = (params, filters) => {
-  const filterParamNames = Object.values(filters).map(f => f.paramName);
+export const validURLParamsForExtendedData = (params, filterConfig) => {
+  const filterParamNames = filterConfig.map(f => f.paramName);// TODO Object.values(filters).map(f => f.paramName);
   const paramEntries = Object.entries(params);
 
   return paramEntries.reduce((validParams, entry) => {
@@ -88,7 +88,7 @@ export const validURLParamsForExtendedData = (params, filters) => {
     return filterParamNames.includes(paramName)
       ? {
           ...validParams,
-          ...validURLParamForExtendedData(paramName, paramValue, filters),
+          ...validURLParamForExtendedData(paramName, paramValue, filterConfig),
         }
       : { ...validParams, [paramName]: paramValue };
   }, {});
@@ -96,11 +96,11 @@ export const validURLParamsForExtendedData = (params, filters) => {
 
 // extract search parameters, including a custom URL params
 // which are validated by mapping the values to marketplace custom config.
-export const pickSearchParamsOnly = (params, filters) => {
+export const pickSearchParamsOnly = (params, filterConfig) => {
   const { address, origin, bounds, ...rest } = params || {};
   const boundsMaybe = bounds ? { bounds } : {};
   const originMaybe = config.sortSearchByDistance && origin ? { origin } : {};
-  const filterParams = validFilterParams(rest, filters);
+  const filterParams = validFilterParams(rest, filterConfig);
 
   return {
     ...boundsMaybe,

@@ -7,7 +7,7 @@ import { withRouter } from 'react-router-dom';
 import omit from 'lodash/omit';
 
 import config from '../../config';
-import { BookingDateRangeFilter, PriceFilter, KeywordFilter, SortBy } from '../../components';
+import { BookingDateRangeFilter, KeywordFilter, SortBy } from '../../components';
 import routeConfiguration from '../../routeConfiguration';
 import { parseDateFromISO8601, stringifyDateToISO8601 } from '../../util/dates';
 import { createResourceLocatorString } from '../../util/routes';
@@ -16,23 +16,10 @@ import css from './SearchFilters.css';
 
 // Dropdown container can have a positional offset (in pixels)
 const FILTER_DROPDOWN_OFFSET = -14;
-const RADIX = 10;
 
 // resolve initial value for a single value filter
 const initialValue = (queryParams, paramName) => {
   return queryParams[paramName];
-};
-
-const initialPriceRangeValue = (queryParams, paramName) => {
-  const price = queryParams[paramName];
-  const valuesFromParams = !!price ? price.split(',').map(v => Number.parseInt(v, RADIX)) : [];
-
-  return !!price && valuesFromParams.length === 2
-    ? {
-        minPrice: valuesFromParams[0],
-        maxPrice: valuesFromParams[1],
-      }
-    : null;
 };
 
 const initialDateRangeValue = (queryParams, paramName) => {
@@ -53,12 +40,12 @@ const SearchFiltersComponent = props => {
   const {
     rootClassName,
     className,
+    children,
     urlQueryParams,
     sort,
     listingsAreLoaded,
     resultsCount,
     searchInProgress,
-    priceFilter,
     dateRangeFilter,
     keywordFilter,
     isSearchFiltersPanelOpen,
@@ -75,10 +62,6 @@ const SearchFiltersComponent = props => {
     id: 'SearchFilters.keywordLabel',
   });
 
-  const initialPriceRange = priceFilter
-    ? initialPriceRangeValue(urlQueryParams, priceFilter.paramName)
-    : null;
-
   const initialDateRange = dateRangeFilter
     ? initialDateRangeValue(urlQueryParams, dateRangeFilter.paramName)
     : null;
@@ -88,16 +71,6 @@ const SearchFiltersComponent = props => {
     : null;
 
   const isKeywordFilterActive = !!initialKeyword;
-
-  const handlePrice = (urlParam, range) => {
-    const { minPrice, maxPrice } = range || {};
-    const queryParams =
-      minPrice != null && maxPrice != null
-        ? { ...urlQueryParams, [urlParam]: `${minPrice},${maxPrice}` }
-        : omit(urlQueryParams, urlParam);
-
-    history.push(createResourceLocatorString('SearchPage', routeConfiguration(), {}, queryParams));
-  };
 
   const handleDateRange = (urlParam, dateRange) => {
     const hasDates = dateRange && dateRange.dates;
@@ -120,18 +93,6 @@ const SearchFiltersComponent = props => {
 
     history.push(createResourceLocatorString('SearchPage', routeConfiguration(), {}, queryParams));
   };
-
-  const priceFilterElement = priceFilter ? (
-    <PriceFilter
-      id="SearchFilters.priceFilter"
-      urlParam={priceFilter.paramName}
-      onSubmit={handlePrice}
-      showAsPopup
-      {...priceFilter.config}
-      initialValues={initialPriceRange}
-      contentPlacementOffset={FILTER_DROPDOWN_OFFSET}
-    />
-  ) : null;
 
   const dateRangeFilterElement =
     dateRangeFilter && dateRangeFilter.config.active ? (
@@ -209,7 +170,7 @@ const SearchFiltersComponent = props => {
       </div>
 
       <div className={css.filters}>
-        {priceFilterElement}
+        {children}
         {dateRangeFilterElement}
         {keywordFilterElement}
         {toggleSearchFiltersPanelButton}
@@ -235,7 +196,6 @@ SearchFiltersComponent.defaultProps = {
   className: null,
   resultsCount: null,
   searchingInProgress: false,
-  priceFilter: null,
   dateRangeFilter: null,
   isSearchFiltersPanelOpen: false,
   toggleSearchFiltersPanel: null,
@@ -250,7 +210,6 @@ SearchFiltersComponent.propTypes = {
   resultsCount: number,
   searchingInProgress: bool,
   onManageDisableScrolling: func.isRequired,
-  priceFilter: propTypes.filterConfig,
   dateRangeFilter: propTypes.filterConfig,
   isSearchFiltersPanelOpen: bool,
   toggleSearchFiltersPanel: func,
